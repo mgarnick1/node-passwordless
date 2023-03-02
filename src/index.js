@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const db = require("./queries");
 
 const app = express();
 
@@ -18,12 +19,13 @@ app.use(
 );
 
 app.use(cors());
-
 app.use(morgan("combined"));
 
 app.get("/", (req, res) => {
   res.json({ info: "Node.js, Express, and Postgres API" });
 });
+
+app.post("/users/add", db.registerUser);
 
 app.listen(3001, () => {
   console.log("listening on port 3001");
