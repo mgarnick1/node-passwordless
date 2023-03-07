@@ -26,6 +26,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/users/add", db.registerUser);
+app.post("users/register", db.finishRegister);
 
 app.listen(3001, () => {
   console.log("listening on port 3001");

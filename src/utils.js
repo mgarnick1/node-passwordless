@@ -41,7 +41,12 @@ const generateServerMakeCredRequest = (email, name, id) => {
   };
 };
 
+const verifyAuthenticatorAttestationResponse = (response) => {
+
+}
+
 module.exports = {
   generateBase64UrlBuffer,
   generateServerMakeCredRequest,
+  verifyAuthenticatorAttestationResponse
 };
