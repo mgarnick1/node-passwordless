@@ -65,7 +65,7 @@ const finishRegister = async (req, res) => {
         true,
         result.authrInfo.fmt,
         result.authrInfo.publicKey,
-        result.authrInfo.credid
+        result.authrInfo.credId
       );
     }
   } else {
