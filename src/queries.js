@@ -52,7 +52,7 @@ const finishRegister = async (req, res) => {
         console.log("JSON CHallenge: ", jsonChallenge);
         console.log("ClientDataChal: ", clientChallenge);
         if (jsonChallenge == clientChallenge) {
-          challengeValue = json.challenge;
+          challengeValue = jsonChallenge;
           userName = json.username;
         }
       }
