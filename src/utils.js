@@ -2,6 +2,7 @@ const base64url = require("base64url");
 const crypto = require("crypto");
 const iso = require("iso-3166-1");
 const { Certificate } = require("@fidm/x509");
+const cbor = require("cbor");
 
 const generateBase64UrlBuffer = (len = 32) => {
   const buffer = crypto.randomBytes(len);
@@ -15,7 +16,7 @@ const generateServerMakeCredRequest = (email, name, id) => {
       name: "WebAuth Test",
       id: "localhost",
     },
-    challenge: generateBase64UrlBuffer(),
+    challenge: generateBase64UrlBuffer(32),
     user: {
       id,
       name: email,
@@ -141,7 +142,7 @@ const parseMakeCredAuthData = (buffer) => {
   let credIdLenBuf = buffer.slice(0, 2);
   buffer = buffer.slice(2);
 
-  let credIdLen = credIdLenBuf.readUInt32BE(0);
+  let credIdLen = credIdLenBuf.readUInt16BE(0);
   let credId = buffer.slice(0, credIdLen);
   buffer = buffer.slice(credIdLen);
   let COSEPublicKey = buffer;
@@ -174,20 +175,19 @@ const checkAAGuidValid = (aaguid_ext, authrDataStruct) => {
 const verifyAuthenticatorAttestationResponse = (response) => {
   const attestationBuffer = base64url.toBuffer(response.attestationObject);
   let ctapMakeCredResp = cbor.decodeAllSync(attestationBuffer)[0];
+  let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
+  let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
+  let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
+  let signature = ctapMakeCredResp.attStmt.sig;
 
   let res = { verified: false };
 
   if (ctapMakeCredResp.fmt === "fido-u2f") {
-    let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
-
     if (!(authDataStruct.flags && U2F_USER_PRESENTED)) {
       throw new Error("User was not present during authentication");
     }
 
-    let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
     let reservedByte = Buffer.from([0x00]);
-
-    let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
 
     let signatureBase = Buffer.concat([
       reservedByte,
@@ -197,9 +197,7 @@ const verifyAuthenticatorAttestationResponse = (response) => {
       publicKey,
     ]);
 
-    let PEMCertificate = ASN1toPEM(ctapMakeCredResp.attStmt.x5c[0]);
-
-    let signature = ctapMakeCredResp.attStmt.sig;
+    let PEMCertificate = ASN1toPEM(ctapMakeCredResp.attStmt?.x5c[0]);
 
     res.verified = verifySignature(signature, signatureBase, PEMCertificate);
 
@@ -213,27 +211,26 @@ const verifyAuthenticatorAttestationResponse = (response) => {
     }
   } else if (
     ctapMakeCredResp.fmt === "packed" &&
-    ctapMakeCredResp.attStmt &&
-    ctapMakeCredResp.attStmt.x5c
+    "x5c" in ctapMakeCredResp.attStmt
   ) {
-    let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
+    // let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
 
     if (!(authDataStruct.flags && U2F_USER_PRESENTED)) {
       throw new Error("User was not present during authentication");
     }
 
-    let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
+    // let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
 
-    let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
+    // let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
 
     let signatureBase = Buffer.concat([
       ctapMakeCredResp.authData,
       clientDataHash,
     ]);
 
-    let PEMCertificate = ASN1toPEM(ctapMakeCredResp.attStmt.x5c[0]);
+    let PEMCertificate = ASN1toPEM(ctapMakeCredResp.attStmt?.x5c[0]);
 
-    let signature = ctapMakeCredResp.attStmt.sig;
+    // let signature = ctapMakeCredResp.attStmt.sig;
 
     let pem = Certificate.fromPEM(PEMCertificate);
 
@@ -260,16 +257,16 @@ const verifyAuthenticatorAttestationResponse = (response) => {
       };
     }
   } else if (ctapMakeCredResp.fmt === "packed") {
-    let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
+    // let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
 
     const signatureBase = Buffer.concat([
       ctapMakeCredResp.authData,
       clientDataHash,
     ]);
 
-    let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
+    // let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
 
-    let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
+    // let publicKey = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey);
 
     const PEMCertificate = ASN1toPEM(publicKey);
 

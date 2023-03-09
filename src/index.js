@@ -5,6 +5,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const db = require("./queries");
+const sessions = require("express-session");
 
 const app = express();
 
@@ -18,6 +19,17 @@ app.use(
   })
 );
 
+const oneDay = 1000 * 60 * 60 * 24;
+
+app.use(
+  sessions({
+    secret: process.env.SESSIONSECRET,
+    saveUninitialized: true,
+    cookie: { maxAge: oneDay, secure: false, httpOnly: false },
+    resave: true,
+  })
+);
+
 app.use(cors());
 app.use(morgan("combined"));
 
@@ -26,7 +38,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/users/add", db.registerUser);
-app.post("users/register", db.finishRegister);
+app.post("/users/register", db.finishRegister);
 
 app.listen(3001, () => {
   console.log("listening on port 3001");

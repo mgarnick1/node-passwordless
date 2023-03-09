@@ -20,6 +20,7 @@ const registerUser = async (req, res) => {
     );
     req.session.challenge = makeCredChallenge.challenge;
     req.session.username = email;
+    req.session.save();
     return res.status(200).json(makeCredChallenge);
   } catch (e) {
     throw e;
@@ -31,16 +32,41 @@ const finishRegister = async (req, res) => {
   let result;
 
   if (type !== "public-key") {
-    res.badRequest({
+    res.status(500).json({
       status: "error",
       message: "Registration failed! type is not public-key",
     });
     return;
   }
 
+  const challenge = (clientChallenge) => {
+    let challengeValue = "";
+    let userName = "";
+    const sessionStore = req.sessionStore.sessions;
+    for (const key in sessionStore) {
+      const session = sessionStore[key];
+      if (session.includes("challenge")) {
+        const json = JSON.parse(session);
+        let jsonChallenge = json.challenge.replaceAll("-", "A");
+        jsonChallenge = jsonChallenge.replaceAll("_", "A");
+        console.log("JSON CHallenge: ", jsonChallenge);
+        console.log("ClientDataChal: ", clientChallenge);
+        if (jsonChallenge == clientChallenge) {
+          challengeValue = json.challenge;
+          userName = json.username;
+        }
+      }
+    }
+    return { challenge: challengeValue, username: userName };
+  };
+
   const clientData = JSON.parse(base64url.decode(response.clientDataJSON));
+  const sessionData = challenge(clientData.challenge);
+  req.session.challenge = sessionData.challenge;
+  req.session.username = sessionData.username;
   if (clientData.challenge !== req.session.challenge) {
-    res.badRequest({
+    console.log(clientData.challenge, req.session.challenge);
+    res.status(500).send({
       status: "error",
       message: "Registration failed! Challenges do not match",
     });
@@ -48,7 +74,7 @@ const finishRegister = async (req, res) => {
   }
 
   if (clientData.origin !== "http://localhost:2001") {
-    res.badRequest({
+    res.status(500).send({
       status: "error",
       message: "Registration failed! Origins do not match",
     });
@@ -60,16 +86,16 @@ const finishRegister = async (req, res) => {
     result = utils.verifyAuthenticatorAttestationResponse(response);
 
     if (result.verified) {
-      await pool.updateUser(
+      await pool.query(users.updateUser, [
         req.session.username,
-        true,
+        1,
         result.authrInfo.fmt,
         result.authrInfo.publicKey,
-        result.authrInfo.credId
-      );
+        result.authrInfo.credId,
+      ]);
     }
   } else {
-    res.badRequest("Cannot determine the type of response");
+    res.status(500).json("Cannot determine the type of response");
     return;
   }
 
@@ -78,7 +104,7 @@ const finishRegister = async (req, res) => {
     res.send("Registration successfull");
     return;
   } else {
-    res.badRequest("Cannot authenticate signature");
+    res.status(500).send("Cannot authenticate signature");
     return;
   }
 };
