@@ -302,6 +302,27 @@ const findAuthr = (credId, authenticators) => {
   throw new Error(`Unknown authenticator with credId ${credId}`);
 };
 
+
+const findChallenge = (clientChallenge, sessionStore) => {
+  let challengeValue = "";
+  let userName = "";
+  for (const key in sessionStore) {
+    const session = sessionStore[key];
+    if (session.includes("challenge")) {
+      const json = JSON.parse(session);
+      let jsonChallenge = json.challenge.replaceAll("-", "A");
+      jsonChallenge = jsonChallenge.replaceAll("_", "A");
+      console.log("JSON CHallenge: ", jsonChallenge);
+      console.log("ClientDataChal: ", clientChallenge);
+      if (jsonChallenge == clientChallenge) {
+        challengeValue = jsonChallenge;
+        userName = json.username;
+      }
+    }
+  }
+  return { challenge: challengeValue, username: userName };
+};
+
 /// Parses AuthenticatorData from GetAssertion response
 const parseGetAssertAuthData = (buffer) => {
   let rpIdHash = buffer.slice(0, 32);
@@ -375,6 +396,7 @@ module.exports = {
   hash,
   COSEECDHAtoPKCS,
   ASN1toPEM,
+  findChallenge,
   findAuthr,
   parseMakeCredAuthData,
   parseGetAssertAuthData,

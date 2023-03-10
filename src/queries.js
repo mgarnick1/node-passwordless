@@ -39,29 +39,8 @@ const finishRegister = async (req, res) => {
     return;
   }
 
-  const challenge = (clientChallenge) => {
-    let challengeValue = "";
-    let userName = "";
-    const sessionStore = req.sessionStore.sessions;
-    for (const key in sessionStore) {
-      const session = sessionStore[key];
-      if (session.includes("challenge")) {
-        const json = JSON.parse(session);
-        let jsonChallenge = json.challenge.replaceAll("-", "A");
-        jsonChallenge = jsonChallenge.replaceAll("_", "A");
-        console.log("JSON CHallenge: ", jsonChallenge);
-        console.log("ClientDataChal: ", clientChallenge);
-        if (jsonChallenge == clientChallenge) {
-          challengeValue = jsonChallenge;
-          userName = json.username;
-        }
-      }
-    }
-    return { challenge: challengeValue, username: userName };
-  };
-
   const clientData = JSON.parse(base64url.decode(response.clientDataJSON));
-  const sessionData = challenge(clientData.challenge);
+  const sessionData = utils.findChallenge(clientData.challenge, req.sessionStore.sessions);
   req.session.challenge = sessionData.challenge;
   req.session.username = sessionData.username;
   if (clientData.challenge !== req.session.challenge) {
@@ -101,7 +80,7 @@ const finishRegister = async (req, res) => {
 
   if (result.verified) {
     req.session.loggedIn = true;
-    res.send("Registration successfull");
+    res.send({message: "Registration successfull", registered: true});
     return;
   } else {
     res.status(500).send("Cannot authenticate signature");
