@@ -1,4 +1,5 @@
 const { pool } = require("../pool");
+const jwt = require("jsonwebtoken");
 
 const users = require("./db/users");
 const utils = require("./utils");
@@ -40,7 +41,10 @@ const finishRegister = async (req, res) => {
   }
 
   const clientData = JSON.parse(base64url.decode(response.clientDataJSON));
-  const sessionData = utils.findChallenge(clientData.challenge, req.sessionStore.sessions);
+  const sessionData = utils.findChallenge(
+    clientData.challenge,
+    req.sessionStore.sessions
+  );
   req.session.challenge = sessionData.challenge;
   req.session.username = sessionData.username;
   if (clientData.challenge !== req.session.challenge) {
@@ -80,7 +84,7 @@ const finishRegister = async (req, res) => {
 
   if (result.verified) {
     req.session.loggedIn = true;
-    res.send({message: "Registration successfull", registered: true});
+    res.send({ message: "Registration successfull", registered: true });
     return;
   } else {
     res.status(500).send("Cannot authenticate signature");
@@ -88,7 +92,113 @@ const finishRegister = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  const { email } = req.body;
+  const user = await pool.query(users.getUserByEmail, [email]);
+  if (!user.rows?.length || !user.rows[0]?.registered) {
+    res.status(400).send({
+      message: `User: ${email} does not exist`,
+    });
+    return;
+  }
+  const userObj = user.rows[0];
+  const authenticator = {
+    fmt: userObj.fmt,
+    publicKey: userObj.public_key,
+    credId: userObj.cred_id,
+  };
+
+  const getAssertion = utils.generateServerGetAssertion([authenticator]);
+  req.session.challenge = getAssertion.challenge;
+  req.session.username = email;
+
+  res.status(200).send(getAssertion);
+};
+
+const verify = async (req, res) => {
+  const { id, response, type } = req.body;
+  let result = {};
+
+  if (type !== "public-key") {
+    res.status(500).send({
+      message: `Type is not public-key`,
+    });
+    return;
+  }
+  const clientData = JSON.parse(base64url.decode(response.clientDataJSON));
+  const sessionData = utils.findChallenge(
+    clientData.challenge,
+    req.sessionStore.sessions
+  );
+  req.session.challenge = sessionData.challenge;
+  req.session.username = sessionData.username;
+  if (clientData.challenge !== req.session.challenge) {
+    res.status(500).send({
+      status: "error",
+      message: "Challenges do not match",
+    });
+    return;
+  }
+  if (clientData.origin !== "http://localhost:2001") {
+    res.status(500).send({
+      status: "error",
+      message: "Origins do not match",
+    });
+    return;
+  }
+  let user = undefined;
+  let userObj = {};
+  if (response.authenticatorData !== undefined) {
+    user = await pool.query(users.getUserByCredId, [id]);
+    if (!user.rows?.length || !user.rows[0].registered) {
+      res.status(400).send({
+        message: `User: ${email} does not exist`,
+      });
+      return;
+    }
+    userObj = user.rows[0];
+    
+    const authenticator = {
+      fmt: userObj.fmt,
+      publicKey: userObj.public_key,
+      credId: userObj.cred_id,
+    };
+    result = utils.verifyAuthenticatorAssertionResponse(id, response, [
+      authenticator,
+    ]);
+  } else {
+    res.status(500).send({
+      status: "error",
+      message: "Cannot determine the type of response",
+    });
+  }
+
+  if (result.verified) {
+    const token = jwt.sign(id, process.env.JWTSECRET);
+    req.session.loggedIn = true;
+    res.send({
+      verification: true,
+      token,
+      user: { email: userObj.email, name: userObj.name, registered: true },
+    });
+  } else {
+    res.status(500).send({
+      status: "error",
+      message: "Cannot authenticate signature",
+      verification: false,
+    });
+  }
+};
+
+const logout = async (req, res) => {
+  req.session.destroy();
+  res.send({ message: "User Logged out" });
+};
+
 module.exports = {
   registerUser,
   finishRegister,
+  login,
+  verify,
+  logout,
 };

@@ -39,6 +39,9 @@ app.get("/", (req, res) => {
 
 app.post("/users/add", db.registerUser);
 app.post("/users/register", db.finishRegister);
+app.post("/users/login", db.login);
+app.post("/users/verify", db.verify);
+app.post("/users/logout", db.logout);
 
 app.listen(3001, () => {
   console.log("listening on port 3001");

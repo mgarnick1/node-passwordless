@@ -69,7 +69,7 @@ const generateServerGetAssertion = (authenticators) => {
     challenge: generateBase64UrlBuffer(32),
     allowCredentials: allowCredentials,
     userVerification: "preferred",
-    rpId: "locahost",
+    rpId: "localhost",
     timeout: 60000,
   };
 };
@@ -127,10 +127,10 @@ const parseMakeCredAuthData = (buffer) => {
   let rpIdHash = buffer.slice(0, 32);
   buffer = buffer.slice(32);
 
-  let flagBuff = buffer.slice(0, 1);
+  let flagsBuf = buffer.slice(0, 1);
   buffer = buffer.slice(1);
 
-  let flags = flagBuff[0];
+  let flags = flagsBuf[0];
 
   let counterBuf = buffer.slice(0, 4);
   buffer = buffer.slice(4);
@@ -149,7 +149,7 @@ const parseMakeCredAuthData = (buffer) => {
 
   return {
     rpIdHash,
-    flagBuff,
+    flagsBuff,
     flags,
     counter,
     counterBuf,
@@ -328,10 +328,10 @@ const parseGetAssertAuthData = (buffer) => {
   let rpIdHash = buffer.slice(0, 32);
   buffer = buffer.slice(32);
 
-  let flagsBuff = buffer.slice(0, 1);
+  let flagsBuf = buffer.slice(0, 1);
   buffer = buffer.slice(1);
 
-  let flags = flagsBuff[0];
+  let flags = flagsBuf[0];
 
   let counterBuf = buffer.slice(0, 4);
   buffer = buffer.slice(4);
@@ -340,7 +340,7 @@ const parseGetAssertAuthData = (buffer) => {
 
   return {
     rpIdHash,
-    flasgBuff,
+    flagsBuf,
     flags,
     counter,
     counterBuf,
@@ -363,9 +363,9 @@ const verifyAuthenticatorAssertionResponse = (id, response, authenticators) => {
     let clientDataHash = hash(base64url.toBuffer(response.clientDataJSON));
 
     let signatureBase = Buffer.concat([
-      authrDataStruct.rpIdHash,
-      authDataStruct.flasgBuff,
-      authDataStruct.counter,
+      authDataStruct.rpIdHash,
+      authDataStruct.flagsBuf,
+      authDataStruct.counterBuf,
       clientDataHash,
     ]);
 
