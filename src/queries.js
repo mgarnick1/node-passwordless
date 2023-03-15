@@ -174,7 +174,15 @@ const verify = async (req, res) => {
   }
 
   if (result.verified) {
-    const token = jwt.sign(id, process.env.JWTSECRET);
+    const token = jwt.sign(
+      {
+        id,
+        name: userObj.name,
+        email: userObj.email,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60,
+      },
+      process.env.JWTSECRET
+    );
     req.session.loggedIn = true;
     res.send({
       verification: true,
