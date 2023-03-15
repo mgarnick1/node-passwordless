@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const users = require("./db/users");
 const utils = require("./utils");
 const base64url = require("base64url");
+const axios = require("axios");
 
 const registerUser = async (req, res) => {
   const { name, email } = req.body;
@@ -156,7 +157,7 @@ const verify = async (req, res) => {
       return;
     }
     userObj = user.rows[0];
-    
+
     const authenticator = {
       fmt: userObj.fmt,
       publicKey: userObj.public_key,
@@ -194,10 +195,31 @@ const logout = async (req, res) => {
   res.send({ message: "User Logged out" });
 };
 
+const getQuotes = async (req, res) => {
+  const ApiKey = process.env.APININJA_APIKEY;
+  try {
+    const response = await axios.get(
+      `https://api.api-ninjas.com/v1/quotes?category=funny`,
+      {
+        headers: {
+          "X-Api-Key": ApiKey,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (response.data && response.data) {
+      res.send({
+        quote: response.data[0],
+      });
+    }
+  } catch (e) {}
+};
+
 module.exports = {
   registerUser,
   finishRegister,
   login,
   verify,
   logout,
+  getQuotes,
 };

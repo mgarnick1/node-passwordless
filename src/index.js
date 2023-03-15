@@ -42,6 +42,7 @@ app.post("/users/register", db.finishRegister);
 app.post("/users/login", db.login);
 app.post("/users/verify", db.verify);
 app.post("/users/logout", db.logout);
+app.get('/quote', db.getQuotes);
 
 app.listen(3001, () => {
   console.log("listening on port 3001");
