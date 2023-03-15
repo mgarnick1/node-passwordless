@@ -149,7 +149,7 @@ const parseMakeCredAuthData = (buffer) => {
 
   return {
     rpIdHash,
-    flagsBuff,
+    flagsBuf,
     flags,
     counter,
     counterBuf,
@@ -312,8 +312,6 @@ const findChallenge = (clientChallenge, sessionStore) => {
       const json = JSON.parse(session);
       let jsonChallenge = json.challenge.replaceAll("-", "A");
       jsonChallenge = jsonChallenge.replaceAll("_", "A");
-      console.log("JSON CHallenge: ", jsonChallenge);
-      console.log("ClientDataChal: ", clientChallenge);
       if (jsonChallenge == clientChallenge) {
         challengeValue = jsonChallenge;
         userName = json.username;

@@ -48,7 +48,6 @@ const finishRegister = async (req, res) => {
   req.session.challenge = sessionData.challenge;
   req.session.username = sessionData.username;
   if (clientData.challenge !== req.session.challenge) {
-    console.log(clientData.challenge, req.session.challenge);
     res.status(500).send({
       status: "error",
       message: "Registration failed! Challenges do not match",
