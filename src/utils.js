@@ -34,11 +34,9 @@ const generateServerMakeCredRequest = (email, name, id) => {
     ],
     authenticatorSelection: {
       residentKey: "preferred",
-      requireResidentKey: false,
-      userVerification: "preferred",
-    },
-    extensions: {
-      credProps: true,
+      requireResidentKey: true,
+      authenticatorAttachment: "platform", 
+      userVerification: "required",
     },
     timeout: 60000,
     attestation: "direct",
