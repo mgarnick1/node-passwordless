@@ -6,8 +6,9 @@ const cbor = require("cbor");
 
 const generateBase64UrlBuffer = (len = 32) => {
   const buffer = crypto.randomBytes(len);
-  const arrayBuffer = base64url(buffer);
-  return arrayBuffer;
+  let bufferToString = base64url(buffer);
+  bufferToString = bufferToString.replaceAll('-', "A").replaceAll('_', "A")
+  return bufferToString;
 };
 
 const generateServerMakeCredRequest = (email, name, id) => {

@@ -10,9 +10,8 @@
       "name": "Launch Program",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/src/index.js",
-      "env": {
-        "CHALLENGE": "%TqBw7Dqjh!ZGk0b?Ww8Fbc>ZeWR^S1eNr8sTn?Vf1P"
-      }
+      "runtimeExecutable": "${env:HOME}/.nvm/versions/node/v16.19.0/bin/node",
+      "env": {}
     }
   ]
 }
